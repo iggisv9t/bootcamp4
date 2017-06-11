@@ -12,20 +12,18 @@ from xgboost import XGBClassifier
 from lightgbm import LGBMClassifier
 from sklearn.ensemble import IsolationForest
 
+# njobs is passed as n_jobs parameter in all sklearn classifiers below
 njobs = 7
 
 def ranker(train, test):
+    """my bicycle to replace train and test values with it's ranks"""
     full = np.concatenate((train, test))
     replace = {key: value for key, value in zip(sorted(np.unique(full)),
         range(len(np.unique(full))))}
     return [replace[key] for key in train], [replace[key] for key in test]
 
-def perform_cv(estimator, train, labels):
-    result = cross_val_score(estimator, train, labels, scoring='accuracy', cv=8)
-    print(result)
-    print(np.mean(result), np.std(result))
-
 def voting(predictionslist):
+    """returns rounded mean of all predictions for every point"""
     re = []
     for pre in predictionslist:
         re.append(round(np.mean(pre)))
@@ -33,7 +31,14 @@ def voting(predictionslist):
 
 def my_cool_cv(X, l, models, metric=accuracy_score, cv=5,
                shuffle=True, random_state=0, draw=True):
-    """models: [('name', model instance), ...] """
+    """ evaluate each models in ensemble separately
+    and whole ensemble in unified CV pipeline
+    X: train data (numpy array, not df)
+    l: labels
+    models: [('name', model instance), ...]
+    metric: metric callable metric(y_pred, y_true) should return number
+    draw: boolean, draw or not scores for each fold
+    """
     kf = KFold(n_splits=cv, shuffle=shuffle, random_state=random_state)
     scores = []
     models_scores = [[] for _ in models]
